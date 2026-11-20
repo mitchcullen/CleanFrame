@@ -233,18 +233,20 @@ try {
     await page({ seed: undefined }, page => page.setViewportSize({ width: 3840, height: 2160 }));
     const firstRun = await state();
     const ids = ['netflix', 'youtube', SPOTIFY, 'primevideo'];
-    check('First run uses the household app order and dark Dock', same(firstRun.dock, ids) && firstRun.look.layout === 'dock' && firstRun.look.bg === 'dark' && firstRun.look.focus === 'type', firstRun);
+    check('First run uses the household app order and dark icons-only Dock', same(firstRun.dock, ids) && firstRun.look.layout === 'dock' && firstRun.look.bg === 'dark' && firstRun.look.focus === 'type' && firstRun.look.apps === 'icons', firstRun);
     const dock = await current.locator('.tile.k-app').evaluateAll(tiles => {
       const stage = document.getElementById('stage').getBoundingClientRect();
       const shelf = document.querySelector('.shelf').getBoundingClientRect();
       return { size: [stage.width, stage.height], labels: tiles.map(tile => tile.getAttribute('aria-label')),
+        logos: tiles.map(tile => tile.querySelector('.mark')?.getAttribute('data-mark')),
+        textCount: tiles.filter(tile => tile.querySelector('.label')).length,
         inView: tiles.every(tile => { const r = tile.getBoundingClientRect(); return r.left >= shelf.left - 1 && r.right <= shelf.right + 1 && r.top >= 0 && r.bottom <= innerHeight; }) };
     });
-    check('The 4K viewport fits all four app tiles', same(dock.size, [3840, 2160]) && dock.inView && same(dock.labels, ['Netflix', 'YouTube', 'Spotify', 'Prime Video']), dock);
+    check('The 4K viewport fits four logos with accessible names and no visible text', same(dock.size, [3840, 2160]) && dock.inView && dock.textCount === 0 && same(dock.logos, ['netflix', 'youtube', 'spotify', 'primevideo']) && same(dock.labels, ['Netflix', 'YouTube', 'Spotify', 'Prime Video']), dock);
     await current.screenshot({ path: out + 'frame-home-dock-4k.jpg', quality: 91 });
     for (const id of ids) {
       const focus = await call('where');
-      check('Remote focus reaches ' + id, focus.focusCount === 1 && focus.focusAction === 'home.app.' + id, focus);
+      check('Remote focus reaches ' + id + ' without revealing text', focus.focusCount === 1 && focus.focusAction === 'home.app.' + id && (await current.locator('.app-focus-name.is-on').count()) === 0, focus);
       await current.keyboard.press('ArrowRight');
     }
     check('Moving focus launches no apps', await current.evaluate(() => __tv.calls.length === 0));

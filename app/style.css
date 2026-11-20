@@ -562,7 +562,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000}
 .a-icons .ph-list.is-compact .ph-group .mark{top:12px}
 .app-focus-name{position:absolute;z-index:3;font-size:40px;line-height:48px;font-weight:500;letter-spacing:-.6px;color:var(--ink);text-shadow:0 1px 2px rgba(14,10,6,.32),0 3px 14px rgba(14,10,6,.24);opacity:0;pointer-events:none;transition:opacity 120ms linear}
 .app-focus-name.is-on{opacity:1}
-.l-dock .app-focus-name{font-size:36px;line-height:44px;text-align:center}
 .bg-dark .app-focus-name,.bg-light .app-focus-name{text-shadow:none}
 .quiet-utils.is-text{right:126px}
 .quiet-utils.is-text .u-content .ico{display:none}
