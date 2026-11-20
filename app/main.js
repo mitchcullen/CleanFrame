@@ -20,10 +20,12 @@
     { id: 'youtube', name: 'YouTube', mark: true, appId: '9Ur5IzDKqV.TizenYouTube' },
     { id: 'appletv', name: 'Apple TV', mark: true, appId: 'com.samsung.tv.aria-video' },
     { id: 'primevideo', name: 'Prime Video', mark: true, appId: 'org.tizen.primevideo' },
+    { id: 'rJeHak5zRg.Spotify', name: 'Spotify', mark: true, brand: 'spotify', appId: 'rJeHak5zRg.Spotify' },
     { id: 'abciview', name: 'ABC iview', mark: true, appId: 'mWK87Xghap.ABCiview' },
     { id: 'sbs', name: 'SBS On Demand', mark: true, appId: 'OyE7OuxlUi.SBSOnDemand' },
     { id: 'applemusic', name: 'Apple Music', mark: true, appId: 'org.tizen.apple.apple-music' }
   ];
+  var DEFAULT_HOME = ['netflix', 'youtube', 'rJeHak5zRg.Spotify', 'primevideo'];
   var PRIMARY = PRIMARY_APPS.map(function (a) { return a.id; }), APPS = PRIMARY_APPS.slice(), ALPHA = [];
   var WALLS = window.CleanFrameWallpapers || [{ id: 'misty', name: 'Misty coast', tone: 'light', ut: { tr: 'mist', br: 'mist' }, frostVeil: .20 }];
   var ADAPTIVE_INK = window.CleanFrameAdaptiveInk || {};
@@ -338,12 +340,12 @@
       if (!app(id) && id.indexOf('.') > 0) APPS.push({ id: id, appId: id, name: id.split('.').pop(), mark: false });
       if (app(id)) h.push(id);
     });
-    if (!h.length) h = PRIMARY.slice();
+    if (!h.length) h = DEFAULT_HOME.slice();
     (Array.isArray(s.recent) ? s.recent : []).forEach(function (id) { if (safeId(id) && app(id) && h.indexOf(id) < 0 && recent.indexOf(id) < 0 && recent.length < 5) recent.push(id); });
     return {
-      bg: pick(modern.bg, LOOK_VALUES.bg, legacyList ? 'dark' : 'photo'), layout: pick(modern.layout, LOOK_VALUES.layout, legacyList ? 'list' : 'dock'),
-      apps: pick(modern.apps, LOOK_VALUES.apps, legacyList ? 'text' : 'both'), controls: pick(modern.controls, LOOK_VALUES.controls, 'both'),
-      focus: pick(modern.focus, LOOK_VALUES.focus, legacyList ? 'type' : 'glass'), material: pick(modern.material, LOOK_VALUES.material, 'soft'),
+      bg: pick(modern.bg, LOOK_VALUES.bg, !saved || legacyList ? 'dark' : 'photo'), layout: pick(modern.layout, LOOK_VALUES.layout, legacyList ? 'list' : 'dock'),
+      apps: pick(modern.apps, LOOK_VALUES.apps, !saved ? 'icons' : legacyList ? 'text' : 'both'), controls: pick(modern.controls, LOOK_VALUES.controls, saved ? 'both' : 'icons'),
+      focus: pick(modern.focus, LOOK_VALUES.focus, !saved || legacyList ? 'type' : 'glass'), material: pick(modern.material, LOOK_VALUES.material, 'soft'),
       font: pick(modern.font, LOOK_VALUES.font, 'manrope'), wall: wall(modern.wall || s.wallpaper) ? modern.wall || s.wallpaper : WALLS[0].id,
       home: h, recent: recent, lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
       mode: pick(s.mode, MODES.map(function (m) { return m.id; }), 'fixed')
@@ -1010,7 +1012,7 @@
   var photoMode = null, photoTransitionToken = 0;
   var sheetEl = $('sheet'), sheetView = $('sheetView');
   var IMG = { photo: $('photo'), mat: $('matImg'), bg: $('sheetBg'), field: $('phFieldImg'), fieldAlt: $('phFieldImgAlt'), utility: $('utFieldImg'), utilityAlt: $('utFieldImgAlt') };
-  var sheetKey = '', slotEls = {}, dockEdgeFrame = 0, dockEdgeUntil = 0, dockAnchorCenter = 960;
+  var sheetKey = '', slotEls = {}, dockEdgeFrame = 0, dockEdgeUntil = 0;
   var appliedPalette = null, appliedPhoto = null, appliedFont = null, appliedFontMetrics = null;
 
   /* Curated locked palettes keep the existing rendering path exactly. */
@@ -1107,7 +1109,7 @@
       b.className = b.className.replace(/\s+is-focus/g, '') + (focus ? ' is-focus' : '');
       if (focus) focused = b;
     });
-    renderUtilFocusLabel(iconsOnly ? focused : null);
+    renderUtilFocusLabel(iconsOnly && S.c.layout === 'list' ? focused : null);
     renderUtilityLens(focused, iconsOnly);
   }
   function renderUtilFocusLabel(button) {
@@ -1141,7 +1143,7 @@
       x = (label.getBoundingClientRect().left - sr.left) / scale - 24;
       width = 1800 - x;
     } else {
-      // Dock icons keep a fixed lens; the separate caption cannot overlap its neighbours.
+      // Dock controls keep the lens within the button bounds.
       x = (r.left - sr.left) / scale; width = r.width / scale;
     }
     key = button.getAttribute('data-action') + '|' + x + '|' + y + '|' + width;
@@ -1158,18 +1160,14 @@
     utPlates[utPlateIndex].className = 'ph-plate ut-lens is-current on-focus';
   }
   function renderAppFocusName(hs) {
-    var it = hs.items[hs.i], width, x, y, placement;
-    if (S.c.apps !== 'icons' || hs.mode !== 'browse' || hs.zone !== 'apps' || !it) { appFocusName.className = 'app-focus-name'; return; }
+    var it = hs.items[hs.i], width, placement;
+    if (S.c.layout !== 'list' || S.c.apps !== 'icons' || hs.mode !== 'browse' || hs.zone !== 'apps' || !it) { appFocusName.className = 'app-focus-name'; return; }
     appFocusName.textContent = app(it.id).name;
-    width = Math.min(S.c.layout === 'list' ? 1056 : 1640, Math.ceil(textWidth(app(it.id).name, S.c.layout === 'list' ? 40 : 36, 500, -.6, 'primary') + 8));
+    width = Math.min(1056, Math.ceil(textWidth(app(it.id).name, 40, 500, -.6, 'primary') + 8));
     appFocusName.style.width = width + 'px';
-    if (S.c.layout === 'list') {
-      x = 280; placement = phFields[photoPlateIndex]._placement;
-      y = placement.y + placement.height / 2 - 24;
-    } else {
-      x = clamp(dockAnchorCenter - width / 2, 140, 1780 - width); y = 932;
-    }
-    appFocusName.style.left = x + 'px'; appFocusName.style.top = (y + fontShift('primary', S.c.layout === 'list' ? 40 : 36)) + 'px';
+    placement = phFields[photoPlateIndex]._placement;
+    appFocusName.style.left = '280px';
+    appFocusName.style.top = (placement.y + placement.height / 2 - 24 + fontShift('primary', 40)) + 'px';
     appFocusName.className = 'app-focus-name is-on';
   }
 
@@ -1235,7 +1233,6 @@
     dock.style.left = g.x + 'px'; dock.style.top = g.y + 'px'; dock.style.width = g.w + 'px'; dock.style.height = g.h + 'px';
     dock.style.setProperty('--tile-w', g.tw + 'px'); dock.style.setProperty('--tile-h', g.th + 'px'); dock.style.setProperty('--dock-h', g.h + 'px');
     dock.style.setProperty('--nudge-top', ((g.th - 48) / 2) + 'px');
-    dockAnchorCenter = g.x + 16 + anchor * g.pitch - off + g.tw / 2;
     IMG.mat.style.left = (-g.x) + 'px'; IMG.mat.style.top = (-g.y) + 'px';
     IMG.mat.style.transformOrigin = '960px ' + (g.y + g.h / 2) + 'px';
     matScrim.style.left = (-g.x) + 'px'; matScrim.style.top = (SCRIM_Y - g.y) + 'px';
