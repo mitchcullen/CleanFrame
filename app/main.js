@@ -344,7 +344,7 @@
     (Array.isArray(s.recent) ? s.recent : []).forEach(function (id) { if (safeId(id) && app(id) && h.indexOf(id) < 0 && recent.indexOf(id) < 0 && recent.length < 5) recent.push(id); });
     return {
       bg: pick(modern.bg, LOOK_VALUES.bg, !saved || legacyList ? 'dark' : 'photo'), layout: pick(modern.layout, LOOK_VALUES.layout, legacyList ? 'list' : 'dock'),
-      apps: pick(modern.apps, LOOK_VALUES.apps, !saved ? 'icons' : legacyList ? 'text' : 'both'), controls: pick(modern.controls, LOOK_VALUES.controls, 'both'),
+      apps: pick(modern.apps, LOOK_VALUES.apps, !saved ? 'icons' : legacyList ? 'text' : 'both'), controls: pick(modern.controls, LOOK_VALUES.controls, saved ? 'both' : 'icons'),
       focus: pick(modern.focus, LOOK_VALUES.focus, !saved || legacyList ? 'type' : 'glass'), material: pick(modern.material, LOOK_VALUES.material, 'soft'),
       font: pick(modern.font, LOOK_VALUES.font, 'manrope'), wall: wall(modern.wall || s.wallpaper) ? modern.wall || s.wallpaper : WALLS[0].id,
       home: h, recent: recent, lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
@@ -1109,7 +1109,7 @@
       b.className = b.className.replace(/\s+is-focus/g, '') + (focus ? ' is-focus' : '');
       if (focus) focused = b;
     });
-    renderUtilFocusLabel(iconsOnly ? focused : null);
+    renderUtilFocusLabel(iconsOnly && S.c.layout === 'list' ? focused : null);
     renderUtilityLens(focused, iconsOnly);
   }
   function renderUtilFocusLabel(button) {
@@ -1143,7 +1143,7 @@
       x = (label.getBoundingClientRect().left - sr.left) / scale - 24;
       width = 1800 - x;
     } else {
-      // Dock icons keep a fixed lens; the separate caption cannot overlap its neighbours.
+      // Dock controls keep the lens within the button bounds.
       x = (r.left - sr.left) / scale; width = r.width / scale;
     }
     key = button.getAttribute('data-action') + '|' + x + '|' + y + '|' + width;

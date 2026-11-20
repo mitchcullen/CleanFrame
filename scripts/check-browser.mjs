@@ -243,6 +243,10 @@ try {
         inView: tiles.every(tile => { const r = tile.getBoundingClientRect(); return r.left >= shelf.left - 1 && r.right <= shelf.right + 1 && r.top >= 0 && r.bottom <= innerHeight; }) };
     });
     check('The 4K viewport fits four logos with accessible names and no visible text', same(dock.size, [3840, 2160]) && dock.inView && dock.textCount === 0 && same(dock.logos, ['netflix', 'youtube', 'spotify', 'primevideo']) && same(dock.labels, ['Netflix', 'YouTube', 'Spotify', 'Prime Video']), dock);
+    const controls = await current.locator('#utils .u').evaluateAll(buttons => buttons.map(button => ({
+      name: button.getAttribute('aria-label'), icon: !!button.querySelector('svg'), labelHidden: getComputedStyle(button.querySelector('.u-label')).display === 'none'
+    })));
+    check('The three Home controls show icons and keep accessible names', firstRun.look.controls === 'icons' && same(controls.map(button => button.name), ['Art Mode', 'All apps', 'Settings']) && controls.every(button => button.icon && button.labelHidden), controls);
     await current.screenshot({ path: out + 'frame-home-dock-4k.jpg', quality: 91 });
     for (const id of ids) {
       const focus = await call('where');
@@ -252,6 +256,10 @@ try {
     check('Moving focus launches no apps', await current.evaluate(() => __tv.calls.length === 0));
     await current.keyboard.press('ArrowUp');
     check('Art Mode is one move from the Dock', (await call('where')).focusAction === 'util.art');
+    for (const action of ['util.art', 'util.apps', 'util.settings']) {
+      check(action + ' stays icon-only when focused', (await call('where')).focusAction === action && (await current.locator('.util-focus-label.is-on').count()) === 0);
+      await current.keyboard.press('ArrowRight');
+    }
     await current.keyboard.press('Escape');
     await current.keyboard.press('ArrowLeft');
     await current.keyboard.press('Enter');
