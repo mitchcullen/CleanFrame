@@ -229,6 +229,33 @@ async function noLiveFilters() {
 
 try {
   preview = await openPreview();
+  await run('Frame Home first-run Dock at 4K', async () => {
+    await page({ seed: undefined }, page => page.setViewportSize({ width: 3840, height: 2160 }));
+    const firstRun = await state();
+    const ids = ['netflix', 'youtube', SPOTIFY, 'primevideo'];
+    check('First run uses the household app order and dark Dock', same(firstRun.dock, ids) && firstRun.look.layout === 'dock' && firstRun.look.bg === 'dark' && firstRun.look.focus === 'type', firstRun);
+    const dock = await current.locator('.tile.k-app').evaluateAll(tiles => {
+      const stage = document.getElementById('stage').getBoundingClientRect();
+      const shelf = document.querySelector('.shelf').getBoundingClientRect();
+      return { size: [stage.width, stage.height], labels: tiles.map(tile => tile.getAttribute('aria-label')),
+        inView: tiles.every(tile => { const r = tile.getBoundingClientRect(); return r.left >= shelf.left - 1 && r.right <= shelf.right + 1 && r.top >= 0 && r.bottom <= innerHeight; }) };
+    });
+    check('The 4K viewport fits all four app tiles', same(dock.size, [3840, 2160]) && dock.inView && same(dock.labels, ['Netflix', 'YouTube', 'Spotify', 'Prime Video']), dock);
+    await current.screenshot({ path: out + 'frame-home-dock-4k.jpg', quality: 91 });
+    for (const id of ids) {
+      const focus = await call('where');
+      check('Remote focus reaches ' + id, focus.focusCount === 1 && focus.focusAction === 'home.app.' + id, focus);
+      await current.keyboard.press('ArrowRight');
+    }
+    check('Moving focus launches no apps', await current.evaluate(() => __tv.calls.length === 0));
+    await current.keyboard.press('ArrowUp');
+    check('Art Mode is one move from the Dock', (await call('where')).focusAction === 'util.art');
+    await current.keyboard.press('Escape');
+    await current.keyboard.press('ArrowLeft');
+    await current.keyboard.press('Enter');
+    await current.waitForFunction(() => __tv.calls.length === 1);
+    check('Selecting Spotify calls its native app ID', await current.evaluate(id => __tv.calls[0].id === id, SPOTIFY));
+  });
   await run('Legacy preference migration', async () => {
     for (const theme of ['list', 'shore', 'grid']) {
       await page({ seed: baseline({ theme, dock: ['youtube', 'netflix'], wallpaper: walls[1].id, lastApp: 'youtube', mode: '15' }) });
