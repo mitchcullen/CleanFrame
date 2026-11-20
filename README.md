@@ -1,5 +1,7 @@
 # CleanFrame
 
+**Frame Home development branch.** See the [foundation brief and technical audit](docs/frame-home.md) for local setup, design direction, compatibility and recovery.
+
 A quieter home screen for Samsung The Frame. Your apps, a photograph and the time, with an interface made for the TV remote.
 
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)
